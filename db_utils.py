@@ -132,14 +132,57 @@ class DatabaseManager:
         """
         return self.execute_query_df(query, tuple(params) if params else None)
 
-    def search_customers(self, search_term: str) -> pd.DataFrame:
-        query = """
-        SELECT *
-        FROM customers
-        WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ?
+    def search_customers(self, search_term: str, search_type: str = None) -> pd.DataFrame:
         """
-        search_pattern = f"%{search_term}%"
-        return self.execute_query_df(query, (search_pattern, search_pattern, search_pattern))
+        Search customers by various fields.
+        Args:
+            search_term: The term to search for
+            search_type: The type of field to search in (name, email, phone, address, city, state)
+        """
+        if search_type:
+            # Search in specific field
+            field_map = {
+                'Name': '(first_name LIKE ? OR last_name LIKE ?)',
+                'Email': 'email LIKE ?',
+                'Phone': 'phone LIKE ?',
+                'Address': 'address LIKE ?',
+                'City': 'city LIKE ?',
+                'State': 'state LIKE ?'
+            }
+            
+            if search_type not in field_map:
+                raise ValueError(f"Invalid search type. Must be one of: {', '.join(field_map.keys())}")
+            
+            query = f"""
+            SELECT *
+            FROM customers
+            WHERE {field_map[search_type]}
+            """
+            
+            # Handle name search which needs two parameters
+            if search_type == 'Name':
+                search_pattern = f"%{search_term}%"
+                params = (search_pattern, search_pattern)
+            else:
+                search_pattern = f"%{search_term}%"
+                params = (search_pattern,)
+        else:
+            # Search across all fields
+            query = """
+            SELECT *
+            FROM customers
+            WHERE first_name LIKE ? 
+               OR last_name LIKE ? 
+               OR email LIKE ? 
+               OR phone LIKE ? 
+               OR address LIKE ? 
+               OR city LIKE ? 
+               OR state LIKE ?
+            """
+            search_pattern = f"%{search_term}%"
+            params = (search_pattern,) * 7
+        
+        return self.execute_query_df(query, params)
 
     def get_sales_trends(self, days: int = 30) -> pd.DataFrame:
         query = """

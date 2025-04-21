@@ -227,16 +227,17 @@ elif page == "Customer Search":
     # Advanced search options
     col1, col2 = st.columns(2)
     with col1:
-        search_term = st.text_input("Search customers by name or email:")
+        search_term = st.text_input("Enter search term:")
     with col2:
         search_type = st.selectbox(
             "Search by:",
-            ["Name", "Email", "Phone", "Address", "City", "State"]
+            ["All Fields", "Name", "Email", "Phone", "Address", "City", "State"]
         )
     
     if search_term:
         # Get search results
-        results = db.search_customers(search_term)
+        search_type = None if search_type == "All Fields" else search_type
+        results = db.search_customers(search_term, search_type)
         
         if not results.empty:
             st.subheader("Search Results")
